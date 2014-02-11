@@ -10,23 +10,25 @@ public class Main {
 	public static int POP_SIZE = 50;
 
 	//sorts a hash map of entities and fitness values using selection sort
-	public HashMap<int[], Integer> sortMap(HashMap<int[], Integer> map)
+	public static ArrayList<Entry<int[], Double>> sortMap(HashMap<int[], Double> hashMap)
 	{
-		HashMap<int[], Integer> sortedMap = new HashMap<int[], Integer>();
+		ArrayList<Entry<int[], Double>> sortedMapList = new ArrayList<Entry<int[], Double>>();
 		
-		for (int i = 0; i < map.size(); i++)
+		for (int i = 0; i < POP_SIZE; i++)
 		{
-			Entry<int[], Integer> largest = null;
-			for (Entry<int[], Integer> e : map.entrySet())
+			Entry<int[], Double> smallest = null;
+			
+			for (Entry<int[], Double> e : hashMap.entrySet())
 			{
-				if (largest == null || largest.getValue().compareTo((Integer)e.getValue()) < 0)
-					largest = e;
+				if (smallest == null || smallest.getValue() > e.getValue())
+					smallest = e;
 			}
-			sortedMap.put(largest.getKey(), largest.getValue());
-			map.remove(largest.getKey());
+			
+			sortedMapList.add(smallest);
+			hashMap.remove(smallest.getKey());
 		}
 		
-		return sortedMap;
+		return sortedMapList;
 	}
 	
 	//generates the fitness of a single entity
@@ -65,12 +67,11 @@ public class Main {
 	}
 	
 	//calculates a map of the fitness of each entity in the population
-	HashMap<int[], Integer> populationFitness(ArrayList<int[]> pop)
+	static HashMap<int[], Double> populationFitness(ArrayList<int[]> pop)
 	{
-		HashMap<int[], Integer> returnMap = new HashMap<int[], Integer>();
+		HashMap<int[], Double> returnMap = new HashMap<int[], Double>();
 		
-
-		int total = 0;
+		double total = 0;
 		for (int i = 0; i < pop.size(); i++)
 		{
 			total += fitness(pop.get(i));
@@ -82,7 +83,7 @@ public class Main {
 		for (int i = 0; i < pop.size(); i++)
 		{
 			returnMap.put(pop.get(i),
-							fitness(pop.get(i))/total);
+							(double)fitness(pop.get(i))/56.0 * 100.0);
 		}
 		
 		return returnMap;
@@ -121,7 +122,7 @@ public class Main {
 	    int i;
 	    for (i = 0; i < 8; i++)
 	    {
-	        int r = (int)(Math.random() * 10000);
+	        int r = (int)(Math.random() * 1000);
 	        if (r == 0)
 	        {
 	            a[i] = (int)(Math.random() * 8);
@@ -131,20 +132,28 @@ public class Main {
 
 	//takes in a sortedPopulation, sorted by fitness percentage
 	//outputs a weighted selection of the best of the population
-	ArrayList<int[]> roulette(HashMap<int[], Integer> sortedPop)
+	static ArrayList<int[]> roulette(ArrayList<Entry<int[], Double>> sortedPop)
 	{
 	    ArrayList<int[]> result = new ArrayList<int[]>();
 
-	    int r = (int)(Math.random() * 100 + 1);
+	    double r = Math.random() * 100.0;
 	    
-	    for (Entry<int[], Integer> e : sortedPop.entrySet())
+	    while (result.size() < POP_SIZE)
 	    {
-	    	if (r > e.getValue().intValue())
-	    	{
-	    		result.add(e.getKey());
-	    		break;
-	    	}
+		    for (Entry<int[], Double> e : sortedPop)
+		    {
+		    	if (r < e.getValue().doubleValue())
+		    	{
+		    		System.out.println(e.getValue().doubleValue());
+		    		int[] newArray = new int[8];
+					System.arraycopy(e.getKey(), 0, newArray, 0, e.getKey().length);
+					result.add(newArray);
+		    		break;
+		    	}
+		    }
 	    }
+	    System.out.println("--------------");
+	    System.out.println(result.size());
 	    
 	    return result;
 	}
@@ -157,8 +166,9 @@ public class Main {
 	        swapGenes(pop.get(i), pop.get(i+1));
 	        mutate(pop.get(i));
 	        mutate(pop.get(i+1));
+	        //pop = roulette(sortMap(populationFitness(pop)));
 	    }
-	    
+	
 	    return pop;
 	}
 
@@ -173,6 +183,7 @@ public class Main {
 			if (f == 56)
 			{
 				result.add(pop.get(i));
+				System.out.println("Solution found");
 			}
 		}
 		
@@ -195,8 +206,8 @@ public class Main {
 
 	    //finds the next generation of entities until there is a sutable result that meets
 	    //the "findSolution" criteria
-	    ArrayList<int[]> result = new ArrayList<int[]>();
-	    while (result == null || result.size() == 0)
+	    ArrayList<int[]> result = findSolution(population);
+	    while (result.size() == 0)
 	    {
 	    	ArrayList<int[]> nextGen = nextGeneration(population);
 	    	result = findSolution(nextGen);
